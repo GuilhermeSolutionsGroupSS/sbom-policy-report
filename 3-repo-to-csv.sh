@@ -3,6 +3,7 @@ import os
 import csv
 import requests
 import sys
+import time
 
 ### Constants ###
 TMP_DIR = 'temp-results'
@@ -52,12 +53,18 @@ def update_headers(token):
 
 def make_request(payload, headers):
     response = requests.post(API_URL, json=payload, headers=headers)
+    if response.status_code == 502:
+        print("Warning: Received 502 from API, skipping this page.")
+        return {'data': {'analyses': {'edges': [], 'pageInfo': {'hasNextPage': False}}}}
     response.raise_for_status()
     return response.json()
 
 ### Main Script ###
 token = get_token()
 headers = update_headers(token)
+
+start_time = time.time()
+last_pause = start_time
 
 with open(INPUT_CSV, newline='') as inf, open(OUTPUT_CSV, 'w', newline='') as outf:
     reader = csv.DictReader(inf)
@@ -77,6 +84,12 @@ with open(INPUT_CSV, newline='') as inf, open(OUTPUT_CSV, 'w', newline='') as ou
         repos = set()
         page = 1
         while True:
+            if time.time() - last_pause >= 15 * 60:
+                print("1 minute pause to avoid block")
+                time.sleep(60)
+                print("continuing...")
+                last_pause = time.time()
+
             payload = {
                 'operationName': 'getListRepos',
                 'query': GET_REPOS_QUERY,
