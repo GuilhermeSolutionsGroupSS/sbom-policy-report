@@ -40,7 +40,8 @@ GET_REPOS_QUERY = '''query getListRepos(
 def get_token():
     token = os.getenv(TOKEN_ENV)
     if not token:
-        token = input("Token not found in environment. Please enter a valid token: ").strip()
+        print(f"Error: environment variable {TOKEN_ENV} not set.", file=sys.stderr)
+        sys.exit(1)
     return token
 
 def update_headers(token):
@@ -49,16 +50,10 @@ def update_headers(token):
         'Authorization': f'ApiKey {token}'
     }
 
-def make_request_with_retry(payload, headers):
-    while True:
-        response = requests.post(API_URL, json=payload, headers=headers)
-        if response.status_code in {401, 502, 503, 504}:
-            print("Token expired or invalid. Please enter a new token.")
-            new_token = input("New token: ").strip()
-            headers['Authorization'] = f'ApiKey {new_token}'
-        else:
-            response.raise_for_status()
-            return response.json()
+def make_request(payload, headers):
+    response = requests.post(API_URL, json=payload, headers=headers)
+    response.raise_for_status()
+    return response.json()
 
 ### Main Script ###
 token = get_token()
@@ -92,7 +87,7 @@ with open(INPUT_CSV, newline='') as inf, open(OUTPUT_CSV, 'w', newline='') as ou
                     'packageIds': [pkg_id]
                 }
             }
-            json_data = make_request_with_retry(payload, headers)
+            json_data = make_request(payload, headers)
             data = json_data.get('data', {}).get('analyses', {})
 
             for edge in data.get('edges', []):
