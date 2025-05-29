@@ -17,8 +17,6 @@ def load_policy_map(json_path):
         data = json.load(jf)
     edges = (
         data.get('data', {})
-            .get('provider', {})
-            .get('collection', {})
             .get('resources', {})
             .get('edges', [])
     )
@@ -26,8 +24,10 @@ def load_policy_map(json_path):
     for edge in edges:
         node = edge.get('node', {})
         repo_name = node.get('name', '').strip()
+        # print(f"repo_name: '{repo_name}'")
         policy = node.get('policy', {})
         policy_name = policy.get('name', '')
+        # print(f"policy_name: '{policy_name}'")
         if repo_name:
             mapping[repo_name] = policy_name
     return mapping
@@ -43,6 +43,7 @@ def main():
 
     # load both maps (empty if missing)
     map1 = load_policy_map(JSON_FILE1) if os.path.isfile(JSON_FILE1) else {}
+    # print(f"The map is: '{map1}'")
     map2 = load_policy_map(JSON_FILE2) if os.path.isfile(JSON_FILE2) else {}
 
     with open(INPUT_CSV, newline='') as inf, open(OUTPUT_CSV, 'w', newline='') as outf:
@@ -67,6 +68,8 @@ def main():
                     pol_name = map1.get(name) or map2.get(name)
                     if pol_name:
                         policies.add(pol_name)
+                    else:
+                        policies.add("no policy found")
 
             row['policies'] = ';'.join(sorted(policies))
             # only write known fields
