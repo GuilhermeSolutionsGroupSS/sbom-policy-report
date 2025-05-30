@@ -3,7 +3,7 @@ set -euo pipefail
 
 API_URL="https://api.boostsecurity.io/asset-management/graphql"
 TMP_DIR="temp-results"
-TOKEN=$BOOST_TOKEN
+TOKEN=$BOOST_API_TOKEN
 
 
 ### GraphQL query to list orgs/groups (collections) ###
@@ -88,7 +88,7 @@ for PROVIDER in GITHUB GITLAB; do
     
     resp=$(curl -s -X POST "$API_URL" \
       -H "Content-Type: application/json" \
-      -H "Authorization: Bearer $TOKEN" \
+      -H "Authorization: ApiKey $TOKEN" \
       -d "$payload")
     hasNextPage=$(jq -r '.data.provider.collections.pageInfo.hasNextPage' <<<"$resp")
     # save IDs
@@ -132,7 +132,7 @@ for PROVIDER in GITHUB GITLAB; do
       )
       resp=$(curl -s -X POST "$API_URL" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $TOKEN" \
+        -H "Authorization: ApiKey $TOKEN" \
         -d "$payload")
       resTotal=0
       if [ "$page" -eq 1 ]; then
