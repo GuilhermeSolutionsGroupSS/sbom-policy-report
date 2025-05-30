@@ -90,7 +90,6 @@ for PROVIDER in GITHUB GITLAB; do
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
       -d "$payload")
-    echo $resp
     hasNextPage=$(jq -r '.data.provider.collections.pageInfo.hasNextPage' <<<"$resp")
     # save IDs
     ids=( $(jq -r '.data.provider.collections.edges[].node.collectionId' <<<"$resp") )
@@ -135,17 +134,22 @@ for PROVIDER in GITHUB GITLAB; do
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $TOKEN" \
         -d "$payload")
-
+      resTotal=0
       if [ "$page" -eq 1 ]; then
         resTotal=$(jq '.data.provider.collection.resources.totalCount' <<<"$resp")
         echo "    Total resources: $resTotal"
       fi
 
-      hasNextPage=$(jq -r '.data.provider.collection.resources.pageInfo.hasNextPage' <<<"$resp")
-      
-      jq -c --arg coll "$COLL_ID" \
-        '.data.provider.collection.resources.edges[] | {collectionId: $coll} + .' \
-        <<<"$resp" >> "$TMP_RES"
+      if [ -n "$resTotal" ] && [ "$resTotal" -ge 1 ]; then
+        hasNextPage=$(jq -r '.data.provider.collection.resources.pageInfo.hasNextPage' <<<"$resp")
+
+        jq -c --arg coll "$COLL_ID" \
+          '.data.provider.collection.resources.edges[] | {collectionId: $coll} + .' \
+          <<<"$resp" >> "$TMP_RES"
+      else
+        hasNextPage=false
+      fi
+
       ((page++))
     done
   done
